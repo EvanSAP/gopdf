@@ -1,0 +1,36 @@
+---
+# Inspiration from Kelsey Hightower hello world
+# See https://github.com/kelseyhightower/kubernetes-initializer-tutorial/blob/master/deployments/helloworld.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: helloworld
+  name: helloworld
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: helloworld
+      name: helloworld
+    spec:
+      containers:
+      - name: helloworld
+        image: repository.hybris.com:5005/upsurge/sample:v2
+        imagePullPolicy: Always
+      imagePullSecrets:
+        - name: "hybris-artifactory"
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: helloworldservice
+spec:
+  selector:
+    app: helloworld
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
