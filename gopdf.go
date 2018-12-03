@@ -2,7 +2,6 @@ package main
 
 import (
     "github.com/gin-gonic/gin"
-    _ "github.com/golang/protobuf/proto"
 )
 func main() {
 router := gin.Default()
