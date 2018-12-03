@@ -1,3 +1,3 @@
 FROM scratch
-ADD ./hello-world /hello-world
-ENTRYPOINT ["/hello-world"]
+ADD ./gopdf /gopdf
+ENTRYPOINT ["/gopdf"]
