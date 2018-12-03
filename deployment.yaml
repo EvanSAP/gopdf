@@ -14,11 +14,15 @@ spec:
       labels:
         app: gopdf
       name: gopdf
+      annotations:
+        sidecar.istio.io/inject: "true"
     spec:
       containers:
       - name: gopdf
         image: repository.hybris.com:5005/upsurge/gopdf:v6
         imagePullPolicy: Always
+        ports:
+          - containerPort: 8080
       imagePullSecrets:
         - name: "hybris-artifactory"
 
@@ -32,5 +36,4 @@ spec:
     app: gopdf
   ports:
   - protocol: TCP
-    port: 80
-    targetPort: 80
+    port: 8080
