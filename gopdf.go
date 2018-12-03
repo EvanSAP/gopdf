@@ -3,6 +3,8 @@ package main
 import (
     "github.com/gin-gonic/gin"
     "github.com/jung-kurt/gofpdf"
+    "io/ioutil"
+    "log"
     "net/http"
 )
 
@@ -31,6 +33,28 @@ func main() {
     })
 
     r.GET("/", func(c *gin.Context) {
+        c.JSON(200, gin.H{
+            "hello": "World!",
+            "me":gin.H{
+                "this":"is",
+                "things": []string{"test","for","me",},
+            },
+        })
+    })
+
+    r.POST("/event/:eventType", func(c *gin.Context) {
+    	eventType := c.Param("eventType")
+        value, err := ioutil.ReadAll(c.Request.Body)
+        if err != nil {
+            c.String(500, "Error %s", err)
+        }
+
+        //eventModel := OrderEvent{}
+        //json.Unmarshal(value, &eventModel)
+
+        log.Printf("Event Posted: %s",eventType)
+        log.Printf(string(value))
+
         c.JSON(200, gin.H{
             "hello": "World!",
             "me":gin.H{

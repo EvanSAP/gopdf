@@ -9,7 +9,7 @@ go mod download
 
 APP_NAME="gopdf"
 PORT="5005"
-VERSION="v6"
+VERSION="v8"
 
 rm $APP_NAME | echo "File ${APP_NAME} does not exist. Don't care!"
 
@@ -21,3 +21,4 @@ docker tag repository.hybris.com:${PORT}/upsurge/${APP_NAME}:latest repository.h
 docker push repository.hybris.com:${PORT}/upsurge/${APP_NAME}:${VERSION}
 
 # docker run --rm --name sample repository.hybris.com:${PORT}/upsurge/${APP_NAME}:${VERSION}
+# kubectl -n mini-stage1 apply -f deployment.yaml
