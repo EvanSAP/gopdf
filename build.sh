@@ -5,8 +5,7 @@ set -euxo
 export GO111MODULE=on
 export GOPATH=$HOME/go
 
-go get github.com/gin-gonic/gin
-go get github.com/golang/protobuf
+go mod download
 
 APP_NAME="gopdf"
 PORT="5005"
