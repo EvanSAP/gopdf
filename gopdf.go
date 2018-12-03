@@ -41,10 +41,12 @@ func main() {
     })
 
     r.GET("/pdf", func(c *gin.Context) {
+        pdfId := c.Query("pdfid")
+        orderId := c.Query("orderid")
         pdf := gofpdf.New("P", "mm", "A4", "")
         pdf.AddPage()
         pdf.SetFont("Arial", "B", 16)
-        pdf.Cell(40, 10, "Hello, world")
+        pdf.Cell(40, 10, "Order id: " + orderId + " PDF id: " + pdfId)
         c.Render(200, &PdfRenderer{pdf:pdf})
     })
 
