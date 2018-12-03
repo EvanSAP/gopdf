@@ -3,6 +3,9 @@
 export GO111MODULE=on
 export GOPATH=$HOME/go
 
+go get github.com/gin-gonic/gin
+go get github.com/golang/protobuf
+
 GOARCH="amd64" \
 GOHOSTARCH="amd64" \
 GOHOSTOS="linux" \
