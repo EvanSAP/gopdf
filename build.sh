@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export GO111MODULE=on
+export GOPATH=$HOME/go
 
 GOARCH="amd64" \
 GOHOSTARCH="amd64" \
