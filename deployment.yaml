@@ -5,19 +5,19 @@ apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   labels:
-    app: helloworld
-  name: helloworld
+    app: gopdf
+  name: gopdf
 spec:
   replicas: 1
   template:
     metadata:
       labels:
-        app: helloworld
-      name: helloworld
+        app: gopdf
+      name: gopdf
     spec:
       containers:
-      - name: helloworld
-        image: repository.hybris.com:5005/upsurge/sample:v2
+      - name: gopdf
+        image: repository.hybris.com:5005/upsurge/gopdf:v6
         imagePullPolicy: Always
       imagePullSecrets:
         - name: "hybris-artifactory"
@@ -26,10 +26,10 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: helloworldservice
+  name: gopdf
 spec:
   selector:
-    app: helloworld
+    app: gopdf
   ports:
   - protocol: TCP
     port: 80
