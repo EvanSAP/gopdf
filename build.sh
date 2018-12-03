@@ -14,3 +14,5 @@ docker tag repository.hybris.com:${PORT}/upsurge/${APP_NAME}:latest repository.h
 docker push repository.hybris.com:${PORT}/upsurge/${APP_NAME}:${VERSION}
 
 # docker run --rm --name sample repository.hybris.com:${PORT}/upsurge/${APP_NAME}:${VERSION}
+
+# kubectl -n mini-stage1 deployment.yaml
