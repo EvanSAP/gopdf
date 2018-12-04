@@ -9,7 +9,7 @@ go mod download
 
 APP_NAME="gopdf"
 PORT="5005"
-VERSION="v8"
+VERSION="v9"
 
 rm $APP_NAME | echo "File ${APP_NAME} does not exist. Don't care!"
 

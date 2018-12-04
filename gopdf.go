@@ -1,12 +1,17 @@
 package main
 
 import (
+    "fmt"
     "github.com/gin-gonic/gin"
     "github.com/jung-kurt/gofpdf"
     "io/ioutil"
     "log"
     "net/http"
+    "os"
 )
+
+const STOREFRONT="electronics"
+var occUrl string
 
 type PdfRenderer struct {
     pdf *gofpdf.Fpdf
@@ -24,12 +29,35 @@ func (PdfRenderer) WriteContentType(w http.ResponseWriter) {
 
 
 func main() {
+    occUrl = os.Getenv("GATEWAY_URL")
+    if occUrl == "" {
+        panic("Failed to set GATEWAY_URL environment variable")
+    }
+
     r := gin.Default()
 
     r.GET("/ping", func(c *gin.Context) {
         c.JSON(200, gin.H{
             "message": "pong",
         })
+    })
+
+    r.GET("/cardTypes", func(c *gin.Context) {
+        cardTypesUrl := fmt.Sprintf("%s/%s/%s",occUrl,STOREFRONT,"cardtypes")
+        resp, err := http.Get(cardTypesUrl)
+        if err != nil {
+            c.String(500,"Internal server error %s", err)
+            return
+        }
+
+        defer resp.Body.Close()
+        body, err := ioutil.ReadAll(resp.Body)
+        if err != nil {
+            c.String(500,"Internal server error %s", err)
+            return
+        }
+
+        c.Data(200, "application/json", body)
     })
 
     r.GET("/", func(c *gin.Context) {
