@@ -13,16 +13,21 @@ spec:
     metadata:
       labels:
         app: gopdf
+        metrics: gopdf-custom-metrics
       name: gopdf
       annotations:
         sidecar.istio.io/inject: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+        prometheus.io/scrape: "true"
     spec:
       containers:
       - name: gopdf
-        image: repository.hybris.com:5005/upsurge/gopdf:v9
+        image: repository.hybris.com:5005/upsurge/gopdf:16f2ff19a7263932de9717bf73ac01c0
         imagePullPolicy: Always
         ports:
           - containerPort: 8080
+          - containerPort: 8081
       imagePullSecrets:
         - name: "hybris-artifactory"
 
@@ -37,3 +42,19 @@ spec:
   ports:
   - protocol: TCP
     port: 8080
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: gopdf-metrics-8081
+  labels:
+    k8s-app: metrics
+    metrics: gopdf-custom-metrics
+spec:
+  selector:
+    app: gopdf
+  ports:
+  - name: web
+    port: 8081
+    protocol: TCP
+---

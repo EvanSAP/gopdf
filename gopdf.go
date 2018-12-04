@@ -4,6 +4,11 @@ import (
     "fmt"
     "github.com/gin-gonic/gin"
     "github.com/jung-kurt/gofpdf"
+    "github.com/prometheus/client_golang/prometheus"
+    "github.com/prometheus/client_golang/prometheus/promauto"
+    _ "github.com/prometheus/client_golang/prometheus/promauto"
+    "github.com/prometheus/client_golang/prometheus/promhttp"
+    "github.com/zsais/go-gin-prometheus"
     "io/ioutil"
     "log"
     "net/http"
@@ -11,7 +16,19 @@ import (
 )
 
 const STOREFRONT="electronics"
-var occUrl string
+
+var (
+    occUrl string
+    opsProcessed = promauto.NewCounter(prometheus.CounterOpts{
+        Name: "gopdf_events_processed",
+        Help: "The total number of processed events",
+    })
+    pdfsGenerated = promauto.NewCounter(prometheus.CounterOpts{
+        Name: "gopdf_pdfs_generated",
+        Help: "The total number of processed events",
+    })
+)
+
 
 type PdfRenderer struct {
     pdf *gofpdf.Fpdf
@@ -29,12 +46,25 @@ func (PdfRenderer) WriteContentType(w http.ResponseWriter) {
 
 
 func main() {
+
+    // Ensure the GATEWAY_URL environment variable is set
+    // typically this comes in from a secret for a bound servicefactory instance
     occUrl = os.Getenv("GATEWAY_URL")
     if occUrl == "" {
         panic("Failed to set GATEWAY_URL environment variable")
     }
 
+    // Enable Prometheus metrics on port :8081/metrics
+    // Kyma likes metrics on 8081
+    promhttp.Handler()
+    http.Handle("/metrics", promhttp.Handler())
+    go http.ListenAndServe(":8081", nil)
+
+
+    // Initialize the real API handlers
     r := gin.Default()
+    p := ginprometheus.NewPrometheus("gin")
+    p.Use(r)
 
     r.GET("/ping", func(c *gin.Context) {
         c.JSON(200, gin.H{
@@ -71,6 +101,10 @@ func main() {
     })
 
     r.POST("/event/:eventType", func(c *gin.Context) {
+
+        // record that we received an event
+        opsProcessed.Inc()
+
     	eventType := c.Param("eventType")
         value, err := ioutil.ReadAll(c.Request.Body)
         if err != nil {
@@ -93,6 +127,8 @@ func main() {
     })
 
     r.GET("/pdf", func(c *gin.Context) {
+        pdfsGenerated.Inc()
+
         pdfId := c.Query("pdfid")
         orderId := c.Query("orderid")
         pdf := gofpdf.New("P", "mm", "A4", "")
