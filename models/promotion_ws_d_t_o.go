@@ -32,7 +32,7 @@ type PromotionWsDTO struct {
 
 	// end date
 	// Format: date-time
-	EndDate strfmt.DateTime `json:"endDate,omitempty"`
+	EndDate CustomDateTime `json:"endDate,omitempty"`
 
 	// fired messages
 	FiredMessages []string `json:"firedMessages"`
@@ -54,7 +54,7 @@ type PromotionWsDTO struct {
 
 	// start date
 	// Format: date-time
-	StartDate strfmt.DateTime `json:"startDate,omitempty"`
+	StartDate CustomDateTime `json:"startDate,omitempty"`
 
 	// title
 	Title string `json:"title,omitempty"`

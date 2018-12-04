@@ -23,7 +23,7 @@ type CategoryHierarchyWsDTO struct {
 
 	// last modified
 	// Format: date-time
-	LastModified strfmt.DateTime `json:"lastModified,omitempty"`
+	LastModified CustomDateTime `json:"lastModified,omitempty"`
 
 	// name
 	Name string `json:"name,omitempty"`

@@ -24,7 +24,7 @@ type ReviewWsDTO struct {
 
 	// date
 	// Format: date-time
-	Date strfmt.DateTime `json:"date,omitempty"`
+	Date CustomDateTime `json:"date,omitempty"`
 
 	// headline
 	Headline string `json:"headline,omitempty"`

@@ -21,11 +21,11 @@ type ConsentWsDTO struct {
 
 	// consent given date
 	// Format: date-time
-	ConsentGivenDate strfmt.DateTime `json:"consentGivenDate,omitempty"`
+	ConsentGivenDate CustomDateTime `json:"consentGivenDate,omitempty"`
 
 	// consent withdrawn date
 	// Format: date-time
-	ConsentWithdrawnDate strfmt.DateTime `json:"consentWithdrawnDate,omitempty"`
+	ConsentWithdrawnDate CustomDateTime `json:"consentWithdrawnDate,omitempty"`
 }
 
 // Validate validates this consent ws d t o

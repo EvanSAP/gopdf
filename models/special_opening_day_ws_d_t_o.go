@@ -27,7 +27,7 @@ type SpecialOpeningDayWsDTO struct {
 
 	// date
 	// Format: date-time
-	Date strfmt.DateTime `json:"date,omitempty"`
+	Date CustomDateTime `json:"date,omitempty"`
 
 	// formatted date
 	FormattedDate string `json:"formattedDate,omitempty"`

@@ -41,14 +41,14 @@ type ConsignmentWsDTO struct {
 
 	// shipping date
 	// Format: date-time
-	ShippingDate strfmt.DateTime `json:"shippingDate,omitempty"`
+	ShippingDate CustomDateTime `json:"shippingDate,omitempty"`
 
 	// status
 	Status string `json:"status,omitempty"`
 
 	// status date
 	// Format: date-time
-	StatusDate strfmt.DateTime `json:"statusDate,omitempty"`
+	StatusDate CustomDateTime `json:"statusDate,omitempty"`
 
 	// tracking ID
 	TrackingID string `json:"trackingID,omitempty"`

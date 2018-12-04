@@ -18,7 +18,7 @@ type ComponentWsDTO struct {
 
 	// modifiedtime
 	// Format: date-time
-	Modifiedtime strfmt.DateTime `json:"modifiedtime,omitempty"`
+	Modifiedtime CustomDateTime `json:"modifiedtime,omitempty"`
 
 	// name
 	Name string `json:"name,omitempty"`

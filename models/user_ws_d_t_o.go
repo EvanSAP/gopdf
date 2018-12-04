@@ -24,7 +24,7 @@ type UserWsDTO struct {
 
 	// deactivation date
 	// Format: date-time
-	DeactivationDate strfmt.DateTime `json:"deactivationDate,omitempty"`
+	DeactivationDate CustomDateTime `json:"deactivationDate,omitempty"`
 
 	// default address
 	DefaultAddress *AddressWsDTO `json:"defaultAddress,omitempty"`

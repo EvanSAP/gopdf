@@ -24,7 +24,7 @@ type OrderHistoryWsDTO struct {
 
 	// placed
 	// Format: date-time
-	Placed strfmt.DateTime `json:"placed,omitempty"`
+	Placed CustomDateTime `json:"placed,omitempty"`
 
 	// status
 	Status string `json:"status,omitempty"`

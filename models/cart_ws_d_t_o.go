@@ -56,7 +56,7 @@ type CartWsDTO struct {
 
 	// expiration time
 	// Format: date-time
-	ExpirationTime strfmt.DateTime `json:"expirationTime,omitempty"`
+	ExpirationTime CustomDateTime `json:"expirationTime,omitempty"`
 
 	// guid
 	GUID string `json:"guid,omitempty"`
@@ -90,7 +90,7 @@ type CartWsDTO struct {
 
 	// save time
 	// Format: date-time
-	SaveTime strfmt.DateTime `json:"saveTime,omitempty"`
+	SaveTime CustomDateTime `json:"saveTime,omitempty"`
 
 	// saved by
 	SavedBy *PrincipalWsDTO `json:"savedBy,omitempty"`

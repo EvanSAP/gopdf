@@ -38,7 +38,7 @@ type OrderWsDTO struct {
 
 	// created
 	// Format: date-time
-	Created strfmt.DateTime `json:"created,omitempty"`
+	Created CustomDateTime `json:"created,omitempty"`
 
 	// delivery address
 	DeliveryAddress *AddressWsDTO `json:"deliveryAddress,omitempty"`

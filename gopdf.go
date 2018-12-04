@@ -1,29 +1,30 @@
 package main
 
 import (
-    "context"
-    "encoding/json"
-    "fmt"
-    "github.com/gin-gonic/gin"
-    "github.com/go-openapi/runtime"
-    httptransport "github.com/go-openapi/runtime/client"
-    "github.com/go-openapi/strfmt"
-    apiclient "github.com/gopdf/client"
-    "github.com/gopdf/client/orders"
-    "github.com/gopdf/commerce"
+"context"
+"encoding/json"
+"fmt"
+"github.com/gin-gonic/gin"
+"github.com/go-openapi/runtime"
+httptransport "github.com/go-openapi/runtime/client"
+"github.com/go-openapi/strfmt"
+apiclient "github.com/gopdf/client"
+"github.com/gopdf/client/orders"
+"github.com/gopdf/commerce"
+    "github.com/gopdf/models"
     "github.com/jung-kurt/gofpdf"
-    "github.com/prometheus/client_golang/prometheus"
-    "github.com/prometheus/client_golang/prometheus/promauto"
-    _ "github.com/prometheus/client_golang/prometheus/promauto"
-    "github.com/prometheus/client_golang/prometheus/promhttp"
-    "github.com/zsais/go-gin-prometheus"
-    _ "golang.org/x/net/context/ctxhttp"
-    "io/ioutil"
-    "log"
-    "net/http"
-    "net/url"
-    "os"
-    "time"
+"github.com/prometheus/client_golang/prometheus"
+"github.com/prometheus/client_golang/prometheus/promauto"
+_ "github.com/prometheus/client_golang/prometheus/promauto"
+"github.com/prometheus/client_golang/prometheus/promhttp"
+"github.com/zsais/go-gin-prometheus"
+_ "golang.org/x/net/context/ctxhttp"
+"io/ioutil"
+"log"
+"net/http"
+"net/url"
+"os"
+"time"
 )
 
 const STOREFRONT="electronics"
@@ -31,6 +32,7 @@ const STOREFRONT="electronics"
 var (
     client *apiclient.Commercesuite
     occUrl url.URL
+    gatewayUrlString string
     opsProcessed = promauto.NewCounter(prometheus.CounterOpts{
         Name: "gopdf_events_processed",
         Help: "The total number of processed events",
@@ -67,7 +69,7 @@ func main() {
         panic("Failed to set GATEWAY_URL environment variable")
     }
     log.Printf("Gateway URL: %s", gatewayUrl)
-
+    gatewayUrlString = gatewayUrl
 
     occUrl, err := url.Parse(gatewayUrl)
     if err != nil {
@@ -75,10 +77,13 @@ func main() {
     }
 
     // create the transport
-    transport := httptransport.New(occUrl.Host, "/rest/v2", []string{occUrl.Scheme})
+    formats := strfmt.NewFormats()
+    formats.Add("datetime", &models.CustomDateTime{}, nil)
+    transport := httptransport.New(occUrl.Host, "", []string{occUrl.Scheme})
 
     // create the API client, with the transport
-    client = apiclient.New(transport, strfmt.Default)
+    client = apiclient.New(transport, formats)
+
 
     // Enable Prometheus metrics on port :8081/metrics
     // Kyma likes metrics on 8081
@@ -116,6 +121,10 @@ func main() {
         c.Data(200, "application/json", body)
     })
 
+
+    r.GET("/orders", getOrders)
+
+
     r.GET("/", func(c *gin.Context) {
         c.JSON(200, gin.H{
             "hello": "World!",
@@ -131,7 +140,7 @@ func main() {
         // record that we received an event
         opsProcessed.Inc()
 
-    	eventType := c.Param("eventType")
+        eventType := c.Param("eventType")
         value, err := ioutil.ReadAll(c.Request.Body)
         if err != nil {
             c.String(500, "Error %s", err)
@@ -167,6 +176,51 @@ func main() {
 
     r.Run(":8080") // listen and serve on 0.0.0.0:8080
 }
+
+func getOrders(c *gin.Context) {
+    ordersUrl := fmt.Sprintf("%s/%s/users/%s/orders",gatewayUrlString, STOREFRONT,"xuhao318@gmail.com" )
+    log.Printf("Orders url: %s", ordersUrl)
+    resp, err := http.Get(ordersUrl)
+    if err != nil {
+        c.String(500,"Internal server error %s", err)
+        return
+    }
+
+    defer resp.Body.Close()
+    body, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        c.String(500,"Internal server error %s", err)
+        return
+    }
+
+    c.Data(200, "application/json", body)
+}
+
+func getOrdersOld(c *gin.Context) {
+
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    params := orders.GetOrdersForUserUsingGETParams{
+        BaseSiteID:STOREFRONT,
+        UserID:"xuhao318@gmail.com",
+        Context: ctx,
+    }
+    defer cancel()
+
+    result, err := client.Orders.GetOrdersForUserUsingGET(&params,nil)
+    if err != nil {
+        //errResponse := err.(*runtime.APIError).Response.(runtime.ClientResponse)
+        //responseBody, _ := ioutil.ReadAll(errResponse.Body())
+
+        log.Printf("Unable to run rest request:  %v, %v", result, err)
+        return
+    }
+    value, _ := json.MarshalIndent(result, "","  ")
+    log.Printf("Received order %s", value)
+
+
+    c.JSON(200, result)
+}
+
 func handleOrderCreated(orderCode string) {
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
     params := orders.GetOrderUsingGETParams{
@@ -178,10 +232,19 @@ func handleOrderCreated(orderCode string) {
 
     result, err := client.Orders.GetOrderUsingGET(&params,nil)
     if err != nil {
-        errResponse := err.(*runtime.APIError).Response.(runtime.ClientResponse)
-        responseBody, _ := ioutil.ReadAll(errResponse.Body())
+        switch v := err.(type) {
+        case *time.ParseError:
+            log.Printf("Parse error %v", v)
+        case *runtime.APIError:
+            log.Printf("Runtime error %v", v)
+            errResponse := v.Response.(runtime.ClientResponse)
+            responseBody, _ := ioutil.ReadAll(errResponse.Body())
 
-        log.Printf("Unable to run rest request:  %v, %v", responseBody, err)
+            log.Printf("Unable to run rest request:  %v, %v", responseBody, err)
+        default:
+            log.Printf("Unknown error %v", v)
+
+        }
         return
     }
     value, _ := json.MarshalIndent(result, "","  ")
