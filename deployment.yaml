@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: gopdf
-        image: repository.hybris.com:5005/upsurge/gopdf:92fc5e122f8897fe71a17eaea45e8f82
+        image: repository.hybris.com:5005/upsurge/gopdf:deb4f7ebd3ad2b99c856a9b98fde9730
         imagePullPolicy: Always
         ports:
           - containerPort: 8080

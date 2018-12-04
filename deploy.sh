@@ -42,6 +42,7 @@ spec:
         ports:
           - containerPort: 8080
           - containerPort: 8081
+
       imagePullSecrets:
         - name: "hybris-artifactory"
 

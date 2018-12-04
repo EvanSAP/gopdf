@@ -24,7 +24,10 @@ _ "golang.org/x/net/context/ctxhttp"
 "net/http"
 "net/url"
 "os"
-"time"
+    "strings"
+    "time"
+    "github.com/mailjet/mailjet-apiv3-go"
+
 )
 
 const STOREFRONT="electronics"
@@ -33,6 +36,7 @@ var (
     client *apiclient.Commercesuite
     occUrl url.URL
     gatewayUrlString string
+    whGatewayUrl string
     opsProcessed = promauto.NewCounter(prometheus.CounterOpts{
         Name: "gopdf_events_processed",
         Help: "The total number of processed events",
@@ -62,6 +66,12 @@ func (PdfRenderer) WriteContentType(w http.ResponseWriter) {
 
 func main() {
 
+    whGatewayUrl = os.Getenv("WH_GATEWAY_URL")
+    if whGatewayUrl == "" {
+        panic("Failed to set WH_GATEWAY_URL environment variable")
+    }
+    log.Printf("Warehouse Gateway URL: %s", whGatewayUrl)
+
     // Ensure the GATEWAY_URL environment variable is set
     // typically this comes in from a secret for a bound servicefactory instance
     gatewayUrl := os.Getenv("GATEWAY_URL")
@@ -76,9 +86,11 @@ func main() {
         log.Panicf("Failed to set GATEWAY_URL environment variable, %s", err)
     }
 
-    // create the transport
+    // Define custom datetime format
     formats := strfmt.NewFormats()
     formats.Add("datetime", &models.CustomDateTime{}, nil)
+
+    // create the transport
     transport := httptransport.New(occUrl.Host, "", []string{occUrl.Scheme})
 
     // create the API client, with the transport
@@ -147,13 +159,18 @@ func main() {
         }
 
         log.Printf("Event Posted %s -- %s",eventType, string(value))
-
+        //consigment.consignmentprocessing
+        //v1
+        //Consignment Processing Event v1
         switch eventType {
         case "order.created":
             orderEvent := commerce.UnmarshalOrderCreatedEvent(value)
             log.Printf("Handling order.created. order number %s", orderEvent.OrderCode)
             go handleOrderCreated(orderEvent.OrderCode)
-            break
+        case "consigment.consignmentprocessing":
+            orderEvent := commerce.UnmarshalOrderCreatedEvent(value)
+            log.Printf("Handling consigment.consignmentprocessing. order number %s", orderEvent.OrderCode)
+            go handleOrderCreated(orderEvent.OrderCode)
         default:
             log.Printf("Unrecognized Event received: %s", eventType)
             break
@@ -196,32 +213,12 @@ func getOrders(c *gin.Context) {
     c.Data(200, "application/json", body)
 }
 
-func getOrdersOld(c *gin.Context) {
-
-    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-    params := orders.GetOrdersForUserUsingGETParams{
-        BaseSiteID:STOREFRONT,
-        UserID:"xuhao318@gmail.com",
-        Context: ctx,
-    }
-    defer cancel()
-
-    result, err := client.Orders.GetOrdersForUserUsingGET(&params,nil)
-    if err != nil {
-        //errResponse := err.(*runtime.APIError).Response.(runtime.ClientResponse)
-        //responseBody, _ := ioutil.ReadAll(errResponse.Body())
-
-        log.Printf("Unable to run rest request:  %v, %v", result, err)
-        return
-    }
-    value, _ := json.MarshalIndent(result, "","  ")
-    log.Printf("Received order %s", value)
-
-
-    c.JSON(200, result)
-}
-
 func handleOrderCreated(orderCode string) {
+
+    log.Printf("Waiting 80 seconds to process order %s",orderCode)
+    time.Sleep(time.Second * 80)
+    log.Printf("Continuing to process order %s",orderCode)
+
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
     params := orders.GetOrderUsingGETParams{
         BaseSiteID:STOREFRONT,
@@ -247,7 +244,54 @@ func handleOrderCreated(orderCode string) {
         }
         return
     }
+
     value, _ := json.MarshalIndent(result, "","  ")
     log.Printf("Received order %s", value)
 
+
+    for _,consignment := range result.Payload.Consignments {
+        sendMail(result.Payload.User.UID,
+            result.Payload.User.Name,
+            result.Payload.Code,
+            consignment.Code)
+        consignmentUrl := whGatewayUrl+"/consignments/"+consignment.Code+"/confirm-shipping"
+        log.Printf("Consignment shipped  URL: %s", consignmentUrl)
+
+        resp, err :=
+            http.Post(consignmentUrl,"application/json", strings.NewReader(""))
+        log.Printf ("Wharehousing Consignment Shipped response: %v, %v", resp, err)
+
+    }
+
+
+}
+
+func sendMail(email string, name string, orderId string, pdfId string) {
+
+    pdfUrl := fmt.Sprintf("https://gopdf.sa-hackathon-09.cluster.extend.sap.cx/pdf?orderid=%s&pdfid=%s",
+        orderId, pdfId)
+
+    publicKey := "9054deeb766cac10b61b46d52b07b011"
+    secretKey := "-----secret---key----here-------"
+
+    mj := mailjet.NewMailjetClient(publicKey, secretKey)
+
+    param := &mailjet.InfoSendMail{
+        FromEmail: "evan@evanhegyi.com",
+        FromName:  "Evan Hegyi",
+        Recipients: []mailjet.Recipient{
+            mailjet.Recipient{
+                Email: email,
+            },
+        },
+        Subject:  "The PDF your ordered, just for you "+name,
+        TextPart: fmt.Sprintf("Hi there %s, Donwnload Here: \n%s",name, pdfUrl),
+    }
+    res, err := mj.SendMail(param)
+    if err != nil {
+        fmt.Println(err)
+    } else {
+        fmt.Println("Success")
+        fmt.Println(res)
+    }
 }

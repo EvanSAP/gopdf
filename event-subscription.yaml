@@ -33,15 +33,15 @@ spec:
 apiVersion: eventing.kyma.cx/v1alpha1
 kind: Subscription
 metadata:
-  name: gopdf-order-canceled
+  name: gopdf-order-consignmentprocessing
   labels:
     example: something-something
 spec:
-  endpoint: http://gopdf.mini-stage1:8080/event/order.canceled
+  endpoint: http://gopdf.mini-stage1:8080/event/consigment.consignmentprocessing
   push_request_timeout_ms: 2000
   max_inflight: 400
   include_subscription_name_header: true
-  event_type: order.canceled
+  event_type: consigment.consignmentprocessing
   event_type_version: v1
   source_id: ec-default
 
