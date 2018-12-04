@@ -88,25 +88,33 @@ kubectl -n $KUBE_NAMESPACE apply -f deployment.yaml
 # &{0xc42009db00 0xc42035ce00 mini-stage1 metrics STDIN 0xc421e49bd8  false}
 # from server for: "STDIN": Forbidden (user=jonathan.hess@sap.com, verb=get, resource=servicemonitors, subresource=) (get servicemonitors.monitoring.coreos.com metrics)
 
-#kubectl -n $KUBE_NAMESPACE apply -f - <<EOF
-#apiVersion: monitoring.coreos.com/v1
-#kind: ServiceMonitor
-#metadata:
-#  name: metrics
-#  namespace: $KUBE_NAMESPACE
-#  labels:
-#    prometheus: core
-#    metrics: gopdf-custom-metrics
-#spec:
-#  selector:
-#    matchLabels:
-#      k8s-app: metrics
-#  targetLabels:
-#    - k8s-app
-#  endpoints:
-#  - port: web
-#    interval: 10s
-#  namespaceSelector:
-#    matchNames:
-#      - $KUBE_NAMESPACE                                                                                                                                                     ➜  gopdf git:(develop) ✗
-#EOF
+KUBE_NAMESPACE=mini-stage1
+
+kubectl -n $KUBE_NAMESPACE apply -f - <<EOF
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: metrics
+  namespace: $KUBE_NAMESPACE
+  labels:
+    prometheus: core
+    metrics: gopdf-custom-metrics
+spec:
+  selector:
+    matchLabels:
+      k8s-app: metrics
+  targetLabels:
+    - k8s-app
+  endpoints:
+  - port: web
+    interval: 10s
+  namespaceSelector:
+    matchNames:
+      - $KUBE_NAMESPACE
+EOF
+
+#
+# + kubectl -n mini-stage1 apply -f -
+# Error from server (Forbidden): error when retrieving current configuration of:
+# &{0xc42009db00 0xc42035ce00 mini-stage1 metrics STDIN 0xc421e49bd8  false}
+# from server for: "STDIN": Forbidden (user=jonathan.hess@sap.com, verb=get, resource=servicemonitors, subresource=) (get servicemonitors.monitoring.coreos.com metrics)

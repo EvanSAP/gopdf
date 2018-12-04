@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "github.com/gin-gonic/gin"
+    "github.com/gopdf/commerce"
     "github.com/jung-kurt/gofpdf"
     "github.com/prometheus/client_golang/prometheus"
     "github.com/prometheus/client_golang/prometheus/promauto"
@@ -37,6 +38,7 @@ type PdfRenderer struct {
 func (p PdfRenderer) Render(w http.ResponseWriter) error {
     return p.pdf.Output(w)
 }
+
 func (PdfRenderer) WriteContentType(w http.ResponseWriter) {
     header := w.Header()
     if val := header["Content-Type"]; len(val) == 0 {
@@ -90,6 +92,24 @@ func main() {
         c.Data(200, "application/json", body)
     })
 
+    r.GET("/swagger", func(c *gin.Context) {
+        cardTypesUrl := fmt.Sprintf("%s/swagger.json",occUrl)
+        resp, err := http.Get(cardTypesUrl)
+        if err != nil {
+            c.String(500,"Internal server error %s", err)
+            return
+        }
+
+        defer resp.Body.Close()
+        body, err := ioutil.ReadAll(resp.Body)
+        if err != nil {
+            c.String(500,"Internal server error %s", err)
+            return
+        }
+
+        c.Data(200, "application/json", body)
+    })
+
     r.GET("/", func(c *gin.Context) {
         c.JSON(200, gin.H{
             "hello": "World!",
@@ -111,19 +131,19 @@ func main() {
             c.String(500, "Error %s", err)
         }
 
-        //eventModel := OrderEvent{}
-        //json.Unmarshal(value, &eventModel)
+        log.Printf("Event Posted %s -- %s",eventType, string(value))
 
-        log.Printf("Event Posted: %s",eventType)
-        log.Printf(string(value))
+        switch eventType {
+        case "order.created":
+            orderEvent := commerce.UnmarshalOrderCreatedEvent(value)
+            log.Printf("Handling order.created. order number %s", orderEvent.OrderCode)
+            break
+        default:
+            log.Printf("Unrecognized Event received: %s", eventType)
+            break
+        }
 
-        c.JSON(200, gin.H{
-            "hello": "World!",
-            "me":gin.H{
-                "this":"is",
-                "things": []string{"test","for","me",},
-            },
-        })
+        c.String(200, "Event Received OK")
     })
 
     r.GET("/pdf", func(c *gin.Context) {
