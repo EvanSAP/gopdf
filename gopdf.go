@@ -1,8 +1,13 @@
 package main
 
 import (
+    "encoding/json"
     "fmt"
     "github.com/gin-gonic/gin"
+    httptransport "github.com/go-openapi/runtime/client"
+    "github.com/go-openapi/strfmt"
+    apiclient "github.com/gopdf/client"
+    "github.com/gopdf/client/orders"
     "github.com/gopdf/commerce"
     "github.com/jung-kurt/gofpdf"
     "github.com/prometheus/client_golang/prometheus"
@@ -10,16 +15,19 @@ import (
     _ "github.com/prometheus/client_golang/prometheus/promauto"
     "github.com/prometheus/client_golang/prometheus/promhttp"
     "github.com/zsais/go-gin-prometheus"
+    _ "golang.org/x/net/context/ctxhttp"
     "io/ioutil"
     "log"
     "net/http"
+    "net/url"
     "os"
 )
 
 const STOREFRONT="electronics"
 
 var (
-    occUrl string
+    client *apiclient.Commercesuite
+    occUrl url.URL
     opsProcessed = promauto.NewCounter(prometheus.CounterOpts{
         Name: "gopdf_events_processed",
         Help: "The total number of processed events",
@@ -51,10 +59,22 @@ func main() {
 
     // Ensure the GATEWAY_URL environment variable is set
     // typically this comes in from a secret for a bound servicefactory instance
-    occUrl = os.Getenv("GATEWAY_URL")
-    if occUrl == "" {
+    gatewayUrl := os.Getenv("GATEWAY_URL")
+    if gatewayUrl == "" {
         panic("Failed to set GATEWAY_URL environment variable")
     }
+
+
+    occUrl, err := url.Parse(gatewayUrl)
+    if err != nil {
+        log.Panicf("Failed to set GATEWAY_URL environment variable, %s", err)
+    }
+
+    // create the transport
+    transport := httptransport.New(occUrl.Host, "/rest/v2", []string{occUrl.Scheme})
+
+    // create the API client, with the transport
+    client = apiclient.New(transport, strfmt.Default)
 
     // Enable Prometheus metrics on port :8081/metrics
     // Kyma likes metrics on 8081
@@ -76,24 +96,6 @@ func main() {
 
     r.GET("/cardTypes", func(c *gin.Context) {
         cardTypesUrl := fmt.Sprintf("%s/%s/%s",occUrl,STOREFRONT,"cardtypes")
-        resp, err := http.Get(cardTypesUrl)
-        if err != nil {
-            c.String(500,"Internal server error %s", err)
-            return
-        }
-
-        defer resp.Body.Close()
-        body, err := ioutil.ReadAll(resp.Body)
-        if err != nil {
-            c.String(500,"Internal server error %s", err)
-            return
-        }
-
-        c.Data(200, "application/json", body)
-    })
-
-    r.GET("/swagger", func(c *gin.Context) {
-        cardTypesUrl := fmt.Sprintf("%s/swagger.json",occUrl)
         resp, err := http.Get(cardTypesUrl)
         if err != nil {
             c.String(500,"Internal server error %s", err)
@@ -137,6 +139,7 @@ func main() {
         case "order.created":
             orderEvent := commerce.UnmarshalOrderCreatedEvent(value)
             log.Printf("Handling order.created. order number %s", orderEvent.OrderCode)
+            go handleOrderCreated(orderEvent.OrderCode)
             break
         default:
             log.Printf("Unrecognized Event received: %s", eventType)
@@ -159,4 +162,16 @@ func main() {
     })
 
     r.Run(":8080") // listen and serve on 0.0.0.0:8080
+}
+func handleOrderCreated(orderCode string) {
+    params := orders.GetOrderUsingGETParams{BaseSiteID:STOREFRONT,Code:orderCode}
+
+    result, err := client.Orders.GetOrderUsingGET(&params,nil)
+    if err != nil {
+        log.Printf("Unable to run %s", err)
+        return
+    }
+    value, _ := json.MarshalIndent(result, "","  ")
+    log.Printf("Received order %s", value)
+
 }
