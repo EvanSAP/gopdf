@@ -90,28 +90,28 @@ kubectl -n $KUBE_NAMESPACE apply -f deployment.yaml
 
 KUBE_NAMESPACE=mini-stage1
 
-kubectl -n $KUBE_NAMESPACE apply -f - <<EOF
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: metrics
-  namespace: $KUBE_NAMESPACE
-  labels:
-    prometheus: core
-    metrics: gopdf-custom-metrics
-spec:
-  selector:
-    matchLabels:
-      k8s-app: metrics
-  targetLabels:
-    - k8s-app
-  endpoints:
-  - port: web
-    interval: 10s
-  namespaceSelector:
-    matchNames:
-      - $KUBE_NAMESPACE
-EOF
+#kubectl -n $KUBE_NAMESPACE apply -f - <<EOF
+#apiVersion: monitoring.coreos.com/v1
+#kind: ServiceMonitor
+#metadata:
+#  name: metrics
+#  namespace: $KUBE_NAMESPACE
+#  labels:
+#    prometheus: core
+#    metrics: gopdf-custom-metrics
+#spec:
+#  selector:
+#    matchLabels:
+#      k8s-app: metrics
+#  targetLabels:
+#    - k8s-app
+#  endpoints:
+#  - port: web
+#    interval: 10s
+#  namespaceSelector:
+#    matchNames:
+#      - $KUBE_NAMESPACE
+#EOF
 
 #
 # + kubectl -n mini-stage1 apply -f -

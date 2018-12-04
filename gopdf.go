@@ -1,9 +1,11 @@
 package main
 
 import (
+    "context"
     "encoding/json"
     "fmt"
     "github.com/gin-gonic/gin"
+    "github.com/go-openapi/runtime"
     httptransport "github.com/go-openapi/runtime/client"
     "github.com/go-openapi/strfmt"
     apiclient "github.com/gopdf/client"
@@ -21,6 +23,7 @@ import (
     "net/http"
     "net/url"
     "os"
+    "time"
 )
 
 const STOREFRONT="electronics"
@@ -63,6 +66,7 @@ func main() {
     if gatewayUrl == "" {
         panic("Failed to set GATEWAY_URL environment variable")
     }
+    log.Printf("Gateway URL: %s", gatewayUrl)
 
 
     occUrl, err := url.Parse(gatewayUrl)
@@ -164,11 +168,20 @@ func main() {
     r.Run(":8080") // listen and serve on 0.0.0.0:8080
 }
 func handleOrderCreated(orderCode string) {
-    params := orders.GetOrderUsingGETParams{BaseSiteID:STOREFRONT,Code:orderCode}
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    params := orders.GetOrderUsingGETParams{
+        BaseSiteID:STOREFRONT,
+        Code:orderCode,
+        Context: ctx,
+    }
+    defer cancel()
 
     result, err := client.Orders.GetOrderUsingGET(&params,nil)
     if err != nil {
-        log.Printf("Unable to run %s", err)
+        errResponse := err.(*runtime.APIError).Response.(runtime.ClientResponse)
+        responseBody, _ := ioutil.ReadAll(errResponse.Body())
+
+        log.Printf("Unable to run rest request:  %v, %v", responseBody, err)
         return
     }
     value, _ := json.MarshalIndent(result, "","  ")
